@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "ai-news-aggregator"
+version = "0.1.0"
+description = "AI 情报聚合日报桌面控制台"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = [
+    "requests>=2.31.0",
+    "pyyaml>=6.0",
+    "flet>=0.25.0",
+    "trafilatura>=1.6.0",
+]
+
+[project.scripts]
+ainews = "ainews.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

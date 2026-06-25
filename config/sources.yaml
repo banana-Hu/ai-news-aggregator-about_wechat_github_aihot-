@@ -1,0 +1,100 @@
+# ============================================
+# AI 外部信息源配置
+# ============================================
+
+# ---- GitHub 配置 ----
+github:
+  # GitHub Token（建议通过环境变量 GITHUB_TOKEN 设置）
+  # token: "ghp_xxxxxxxxxxxxxxxxxxxx"
+  token: ""  # 不设置则使用未认证模式（60 req/h）
+
+  # 搜索关键词
+  queries:
+    - "AI Agent"
+    - "LLM"
+    - "RAG"
+    - "MCP"
+    - "AI coding"
+    - "workflow automation"
+    - "Claude Code"
+    - "multi-agent"
+    - "local LLM"
+    - "prompt engineering"
+    - "AI tool"
+    - "function calling"
+    - "AI workflow"
+    - "autonomous agent"
+
+  # 每个关键词最大抓取数量
+  max_per_query: 10
+
+  # 排序方式 (stars / updated / forks / help-wanted-issues)
+  sort: "stars"
+  order: "desc"
+
+  # 重试配置
+  max_retries: 3
+  request_timeout: 15
+
+# ---- AIHOT 配置 ----
+aihot:
+  # API 基础 URL
+  base_url: "https://aihot.virxact.com"
+
+  # UA（如不设置，使用默认浏览器 UA + aihot-skill 标识）
+  # user_agent: "Mozilla/5.0 ..."
+
+  # 最大抓取数量
+  max_items: 50
+
+  # 往回拉取天数
+  days_back: 3
+
+  # 重试配置
+  max_retries: 3
+  request_timeout: 15
+
+# ---- 公众号（WeChat MP）配置 ----
+wechat_mp:
+  # 是否启用 AIHOT 关键词发现公众号文章
+  enabled: true
+
+  # AIHOT 搜索关键词（用于发现公众号文章）
+  search_keywords:
+    - "AI"
+    - "Agent"
+    - "LLM"
+    - "大模型"
+    - "OpenAI"
+    - "Claude"
+    - "ChatGPT"
+    - "创业"
+    - "科技"
+    - "AI 产品"
+
+  # 手动指定的公众号列表
+  accounts:
+    # - name: "数字生命卡兹克"
+    #   gh_id: "gh_xxx"
+    # - name: "机器之心"
+    #   gh_id: "gh_xxx"
+
+  # 每次最多处理多少篇文章
+  max_articles: 30
+
+  # 是否提取文章全文正文
+  extract_content: true
+
+  # 搜索往回的天数
+  days_back: 3
+
+  # 重试配置
+  max_retries: 3
+  request_timeout: 15
+
+# ---- 全局配置 ----
+global:
+  # 输出目录
+  output_dir: "output"
+  # 日志级别 (DEBUG / INFO / WARNING / ERROR)
+  log_level: "INFO"

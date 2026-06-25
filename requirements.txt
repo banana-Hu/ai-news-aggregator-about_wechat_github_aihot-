@@ -1,0 +1,4 @@
+requests>=2.31.0
+pyyaml>=6.0
+flet>=0.25.0
+trafilatura>=1.6.0
