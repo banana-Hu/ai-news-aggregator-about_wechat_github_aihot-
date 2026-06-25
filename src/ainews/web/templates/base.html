@@ -1,83 +1,397 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI News Aggregator</title>
-  <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-  <link href="/static/app.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 情报聚合 · 控制台</title>
+    <style>
+        :root {
+            --bg-base: #f4f7f6;
+            --panel-bg: #ffffff;
+            --panel-border: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --accent-primary: #059669;
+            --accent-primary-hover: #047857;
+            --accent-light: #d1fae5;
+            --success: #10b981;
+            --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -2px rgba(0,0,0,0.025);
+            --transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+        }
+        *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+        ::-webkit-scrollbar{width:6px;height:6px}
+        ::-webkit-scrollbar-track{background:transparent}
+        ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
+        body{background:var(--bg-base);color:var(--text-primary);display:flex;height:100vh;overflow:hidden}
+
+        .sidebar{width:260px;background:var(--panel-bg);border-right:1px solid var(--panel-border);display:flex;flex-direction:column;box-shadow:var(--shadow-sm)}
+        .logo-section{height:80px;display:flex;align-items:center;padding:0 28px;gap:16px;border-bottom:1px solid var(--panel-border)}
+        .logo-icon{width:36px;height:36px;border-radius:12px;background:var(--accent-light);color:var(--accent-primary);display:flex;align-items:center;justify-content:center;font-size:18px}
+        .logo-text h1{font-size:16px;font-weight:600;color:var(--text-primary)}
+        .logo-text span{font-size:11px;color:var(--text-muted);font-family:monospace}
+        .nav-menu{padding:28px 16px;flex:1;display:flex;flex-direction:column;gap:8px}
+        .nav-item{display:flex;align-items:center;padding:12px 18px;border-radius:10px;color:var(--text-secondary);text-decoration:none;font-size:14px;transition:var(--transition);gap:14px;cursor:pointer;font-weight:500}
+        .nav-item:hover{background:#f8fafc;color:var(--text-primary);transform:translateX(4px)}
+        .nav-item.active{background:var(--accent-light);color:var(--accent-primary)}
+        .sidebar-footer{padding:24px 28px;font-size:12px;color:var(--text-muted);border-top:1px solid var(--panel-border);display:flex;align-items:center;gap:10px}
+        .status-dot{width:8px;height:8px;background:var(--success);border-radius:50%;box-shadow:0 0 0 3px rgba(16,185,129,0.2)}
+
+        .main-wrapper{flex:1;padding:48px 56px;overflow-y:auto}
+        .view-section{display:none;animation:fadeInUP 0.4s ease forwards}
+        .view-section.active{display:block}
+        @keyframes fadeInUP{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        .header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:40px}
+        .page-title h2{font-size:24px;font-weight:600;color:var(--text-primary)}
+        .page-title p{font-size:13px;color:var(--text-secondary);margin-top:8px}
+
+        .white-panel{background:var(--panel-bg);border:1px solid var(--panel-border);border-radius:16px;padding:28px;box-shadow:var(--shadow-sm);transition:var(--transition)}
+        .white-panel:hover{box-shadow:var(--shadow-lg);border-color:#cbd5e1}
+
+        .btn{background:#ffffff;border:1px solid var(--panel-border);color:var(--text-primary);padding:10px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;transition:var(--transition);display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:var(--shadow-sm)}
+        .btn:hover{background:#f8fafc;border-color:#cbd5e1;transform:translateY(-1px);box-shadow:var(--shadow-md)}
+        .btn:active{transform:translateY(0);box-shadow:var(--shadow-sm)}
+        .btn-primary{background:var(--accent-primary);border-color:var(--accent-primary);color:#fff}
+        .btn-primary:hover{background:var(--accent-primary-hover);border-color:var(--accent-primary-hover)}
+        .btn-large{padding:14px;font-size:14px;border-radius:10px}
+        .btn:disabled{opacity:0.6;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+        .btn-sm{padding:6px 12px;font-size:12px}
+        .btn-outline-success{color:var(--accent-primary);border-color:var(--accent-primary)}
+        .btn-outline-success:hover{background:var(--accent-light)}
+        .btn-outline-danger{color:#ef4444;border-color:#ef4444}
+        .btn-outline-danger:hover{background:#fef2f2}
+
+        .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-bottom:32px}
+        .stat-card{display:flex;flex-direction:column;justify-content:center;padding:32px 24px;text-align:center;align-items:center}
+        .stat-value{font-size:36px;font-weight:600;margin-bottom:8px;color:var(--text-primary)}
+        .stat-value.success{color:var(--accent-primary);font-size:24px}
+        .stat-label{font-size:13px;color:var(--text-secondary);font-weight:500}
+
+        .dashboard-row{display:grid;grid-template-columns:1fr 1.5fr;gap:24px}
+        .panel-header{font-size:14px;color:var(--text-primary);margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;font-weight:600}
+        .action-grid{display:flex;flex-direction:column;gap:16px}
+        .action-row{display:flex;gap:16px}
+        .action-row>button{flex:1}
+
+        .terminal-container{background:#f8fafc;border-radius:12px;height:300px;padding:20px;border:1px solid var(--panel-border);font-family:'JetBrains Mono','Courier New',monospace;font-size:12px;color:var(--text-secondary);overflow-y:auto;line-height:1.7}
+        .log-line{margin-bottom:6px;opacity:0;animation:fadeInLog 0.3s forwards}
+        @keyframes fadeInLog{to{opacity:1}}
+        .log-time{color:var(--text-muted);margin-right:12px;user-select:none}
+        .log-ok{color:var(--accent-primary);font-weight:600}
+        .log-err{color:#ef4444;font-weight:600}
+        .log-warn{color:#d97706;font-weight:600}
+        .log-info{color:#0284c7;font-weight:600}
+
+        .source-item{display:flex;justify-content:space-between;align-items:center;padding:20px;background:#f8fafc;border-radius:12px;border:1px solid var(--panel-border);margin-bottom:12px}
+        .badge{font-size:11px;padding:2px 8px;border-radius:12px;font-weight:500}
+        .badge-aihot{background:#dbeafe;color:#1d4ed8}
+        .badge-github{background:#f3e8ff;color:#7c3aed}
+        .badge-mp{background:var(--accent-light);color:var(--accent-primary)}
+        .badge-auto{background:#fef3c7;color:#92400e}
+
+        .sub-list{max-height:450px;overflow-y:auto}
+        .sub-item{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--panel-border)}
+        .sub-item:last-child{border-bottom:none}
+
+        .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);display:none;align-items:center;justify-content:center;z-index:100}
+        .modal-overlay.show{display:flex}
+        .modal-box{background:var(--panel-bg);border-radius:16px;padding:28px;width:600px;max-height:500px;overflow-y:auto;box-shadow:var(--shadow-lg)}
+        .modal-box h4{margin-bottom:16px;font-size:16px}
+        .rating-btns{display:flex;gap:6px}
+        .rating-btns button{border:1px solid var(--panel-border);background:#f8fafc;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:13px}
+        .rating-btns button:hover{background:var(--accent-light);border-color:var(--accent-primary)}
+        .rating-btns button.rated{background:var(--accent-light);border-color:var(--accent-primary)}
+
+        .section-title{font-size:20px;font-weight:600;margin-bottom:16px}
+        .empty-state{text-align:center;padding:40px;color:var(--text-muted)}
+    </style>
 </head>
 <body>
 
-<div class="app-layout">
-
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="sidebar-brand">
-      <div class="sidebar-brand-icon">N</div>
-      <div class="sidebar-brand-text">AI News</div>
-      <div class="sidebar-brand-dot" title="运行中"></div>
+<nav class="sidebar">
+    <div class="logo-section">
+        <div class="logo-icon">🌿</div>
+        <div class="logo-text"><h1>AI News</h1><span>Aggregator Console</span></div>
     </div>
-
-    <nav class="sidebar-nav">
-      <a href="/" class="{{ 'active' if current_page == '/' else '' }}">
-        <i class="bi bi-speedometer2"></i>概览
-      </a>
-      <a href="/fetch" class="{{ 'active' if current_page == '/fetch' else '' }}">
-        <i class="bi bi-cloud-download"></i>数据抓取
-      </a>
-      <a href="/push" class="{{ 'active' if current_page == '/push' else '' }}">
-        <i class="bi bi-send"></i>推送
-      </a>
-      <a href="/subscriptions" class="{{ 'active' if current_page == '/subscriptions' else '' }}">
-        <i class="bi bi-people"></i>订阅管理
-      </a>
-      <a href="/settings" class="{{ 'active' if current_page == '/settings' else '' }}">
-        <i class="bi bi-gear"></i>设置
-      </a>
-    </nav>
-
-    <div class="sidebar-footer">
-      <span>v0.1.0</span>
-      <span class="status-ok">运行中</span>
+    <div class="nav-menu" id="navMenu">
+        <div class="nav-item active" data-target="view-overview"><span>📊</span> 概览</div>
+        <div class="nav-item" data-target="view-fetch"><span>☁️</span> 数据抓取</div>
+        <div class="nav-item" data-target="view-subscriptions"><span>👥</span> 订阅管理</div>
+        <div class="nav-item" data-target="view-push"><span>📤</span> 推送</div>
+        <div class="nav-item" data-target="view-settings"><span>⚙️</span> 设置</div>
     </div>
-  </aside>
+    <div class="sidebar-footer"><div class="status-dot"></div> Core v0.2.0 · 运行良好</div>
+</nav>
 
-  <!-- Main Content -->
-  <main class="main-content">
-    {% block content %}{% endblock %}
-  </main>
+<main class="main-wrapper">
+    <!-- 概览 -->
+    <section id="view-overview" class="view-section active">
+        <header class="header"><div class="page-title"><h2>控制台概览</h2><p>全局数据监控与快捷任务调度中心</p></div></header>
+        <div class="stats-grid">
+            <div class="white-panel stat-card"><div class="stat-value" id="count-items">0</div><div class="stat-label">已缓存情报条目</div></div>
+            <div class="white-panel stat-card"><div class="stat-value" id="count-logs">0</div><div class="stat-label">系统操作日志</div></div>
+            <div class="white-panel stat-card"><div class="stat-value success" id="lark-status">检查中</div><div class="stat-label">飞书推送</div></div>
+            <div class="white-panel stat-card"><div class="stat-value success">Online</div><div class="stat-label">后台驻留服务</div></div>
+        </div>
+        <div class="dashboard-row">
+            <div class="white-panel">
+                <div class="panel-header">⚡ 快捷执行</div>
+                <div class="action-grid">
+                    <button class="btn btn-primary btn-large" onclick="doFetch('all')">☁️ 一键抓取全网数据源</button>
+                    <div class="action-row">
+                        <button class="btn btn-large" onclick="doFetch('aihot')">🔥 AIHOT</button>
+                        <button class="btn btn-large" onclick="doFetch('wechat_mp')">📢 公众号</button>
+                    </div>
+                    <button class="btn btn-large" onclick="doPush()">📤 推送飞书日报</button>
+                </div>
+            </div>
+            <div class="white-panel">
+                <div class="panel-header"><span>📝 运行日志</span><button class="btn btn-sm" onclick="clearTerm()">清空</button></div>
+                <div class="terminal-container" id="terminal"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 数据抓取 -->
+    <section id="view-fetch" class="view-section">
+        <header class="header"><div class="page-title"><h2>数据抓取控制</h2><p>管理源头，手动触发采集脚本</p></div></header>
+        <div class="white-panel" style="max-width:800px">
+            <div class="panel-header">📡 数据源列表</div>
+            <div id="fetch-sources"><div class="empty-state">加载中...</div></div>
+            <div style="margin-top:24px">
+                <button class="btn btn-primary btn-large" onclick="doFetch('all')">☁️ 一键抓取全部</button>
+            </div>
+        </div>
+        <div class="white-panel" style="max-width:800px;margin-top:24px">
+            <div class="panel-header"><span>📝 运行日志</span><button class="btn btn-sm" onclick="clearTerm()">清空</button></div>
+            <div class="terminal-container" id="terminal2" style="height:250px"></div>
+        </div>
+    </section>
+
+    <!-- 订阅管理 -->
+    <section id="view-subscriptions" class="view-section">
+        <header class="header"><div class="page-title"><h2>订阅管理</h2><p>关注高质量创作者，智能推荐</p></div></header>
+        <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+            <div class="white-panel stat-card"><div class="stat-value" id="sub-total">0</div><div class="stat-label">已发现创作者</div></div>
+            <div class="white-panel stat-card"><div class="stat-value success" id="sub-followed">0</div><div class="stat-label">正在关注</div></div>
+            <div class="white-panel stat-card"><div class="stat-value" id="sub-auto">0</div><div class="stat-label">自动关注</div></div>
+        </div>
+        <div class="dashboard-row">
+            <div class="white-panel">
+                <div class="panel-header">⭐ 正在关注</div>
+                <div class="sub-list" id="followed-list"><div class="empty-state">暂无关注</div></div>
+            </div>
+            <div class="white-panel">
+                <div class="panel-header">💡 推荐关注</div>
+                <div class="sub-list" id="suggested-list"><div class="empty-state">暂无推荐</div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 推送 -->
+    <section id="view-push" class="view-section">
+        <header class="header"><div class="page-title"><h2>飞书推送</h2><p>格式化日报，推送到已配置群</p></div></header>
+        <div class="white-panel" style="max-width:700px">
+            <div class="panel-header">📤 推送控制</div>
+            <div style="margin-bottom:16px;font-size:13px;color:var(--text-secondary)" id="push-items-info">当前缓存：0 条</div>
+            <button class="btn btn-primary btn-large" onclick="doPush()">📤 推送飞书日报</button>
+            <div style="margin-top:16px;font-size:12px;color:var(--text-muted)">推送格式：飞书 post 富文本，含标题/摘要/可点击链接</div>
+        </div>
+        <div class="white-panel" style="max-width:700px;margin-top:24px">
+            <div class="panel-header"><span>📝 推送日志</span><button class="btn btn-sm" onclick="clearTerm()">清空</button></div>
+            <div class="terminal-container" id="terminal3" style="height:200px"></div>
+        </div>
+    </section>
+
+    <!-- 设置 -->
+    <section id="view-settings" class="view-section">
+        <header class="header"><div class="page-title"><h2>系统设置</h2><p>API 密钥与服务配置参数</p></div></header>
+        <div class="white-panel" style="max-width:800px">
+            <div class="panel-header">⚙️ 环境变量设置</div>
+            <div style="display:flex;flex-direction:column;gap:24px">
+                <div>
+                    <label style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;display:block;font-weight:500">LARK_CHAT_ID (飞书群 ID)</label>
+                    <input type="text" id="setting-chat-id" style="width:100%;padding:12px 16px;background:#f8fafc;border:1px solid var(--panel-border);border-radius:8px;outline:none;font-family:monospace;transition:all 0.3s" onfocus="this.style.borderColor='var(--accent-primary)'" onblur="this.style.borderColor='var(--panel-border)'">
+                </div>
+                <div>
+                    <label style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;display:block;font-weight:500">GITHUB_TOKEN</label>
+                    <input type="password" id="setting-gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="width:100%;padding:12px 16px;border:1px solid var(--panel-border);border-radius:8px;outline:none;font-family:monospace;transition:all 0.3s" onfocus="this.style.borderColor='var(--accent-primary)'" onblur="this.style.borderColor='var(--panel-border)'">
+                </div>
+                <button class="btn btn-primary btn-large" onclick="saveSettings()">💾 保存配置</button>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- 评分弹窗 -->
+<div class="modal-overlay" id="ratingModal">
+    <div class="modal-box"><h4 id="ratingTitle"></h4><div id="ratingBody" class="sub-list"></div><div style="margin-top:16px;text-align:right"><button class="btn" onclick="closeRating()">关闭</button></div></div>
 </div>
 
-<!-- Toast -->
-<div class="toast-container" id="toast-container"></div>
-
-<script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
 <script>
-function showToast(msg, type) {
-  const c = document.getElementById('toast-container');
-  const colors = { ok: '#22C55E', err: '#EF4444', warn: '#F59E0B', info: '#4F7CFF' };
-  const bg = colors[type] || '#4F7CFF';
-  const t = document.createElement('div');
-  t.className = 'toast-item';
-  t.style.color = bg;
-  t.textContent = msg;
-  c.appendChild(t);
-  setTimeout(() => t.remove(), 5000);
+// --- 导航 ---
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+        item.classList.add('active');
+        document.getElementById(item.dataset.target).classList.add('active');
+    });
+});
+
+// --- 日志 ---
+const terminals = [document.getElementById('terminal'), document.getElementById('terminal2'), document.getElementById('terminal3')];
+let logCount = 0;
+
+function t() { const d=new Date(); return `[${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}]`;}
+function addLog(msg, kind='info') {
+    const line = `<div class="log-line"><span class="log-time">${t()}</span> <span class="log-${kind}">${msg}</span></div>`;
+    terminals.forEach(el => { if(el) { el.insertAdjacentHTML('beforeend', line); el.scrollTop = el.scrollHeight; } });
+    logCount++; document.getElementById('count-logs').innerText = logCount;
+}
+function clearTerm() { terminals.forEach(el => { if(el) el.innerHTML=''; }); addLog('日志已清空', 'warn'); }
+
+// --- API 调用 ---
+async function api(url, opts={}) {
+    const r = await fetch(url, { method: opts.method||'GET', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body: opts.body, ...opts });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
 }
 
-function toggleLoading(btn, loading, origText) {
-  if (loading) {
-    btn._origHTML = btn.innerHTML;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>' + origText;
-    btn.classList.add('btn-loading');
-  } else {
-    btn.innerHTML = btn._origHTML || origText;
-    btn.classList.remove('btn-loading');
-  }
+function postForm(url, data) {
+    const body = Object.entries(data).map(([k,v]) => encodeURIComponent(k)+'='+encodeURIComponent(v)).join('&');
+    return api(url, {method:'POST', body});
 }
+
+// --- 抓取 ---
+let fetching = false;
+async function doFetch(source) {
+    if (fetching) { addLog('任务正在进行中', 'warn'); return; }
+    fetching = true;
+    addLog(`开始抓取: ${source}`, 'info');
+    try {
+        await postForm('/api/fetch', {source});
+        addLog(`抓取任务已启动`, 'ok');
+        setTimeout(refreshStats, 3000);
+        setTimeout(refreshStats, 8000);
+    } catch(e) { addLog(`抓取失败: ${e.message}`, 'err'); }
+    fetching = false;
+}
+
+// --- 推送 ---
+async function doPush() {
+    if (fetching) { addLog('任务进行中', 'warn'); return; }
+    addLog('开始推送飞书...', 'info');
+    try {
+        const r = await postForm('/api/push', {});
+        addLog(r.msg, r.ok?'ok':'err');
+    } catch(e) { addLog(`推送失败: ${e.message}`, 'err'); }
+}
+
+// --- 统计刷新 ---
+async function refreshStats() {
+    try {
+        const items = await api('/api/items');
+        document.getElementById('count-items').innerText = items.length;
+        document.getElementById('push-items-info').innerText = `当前缓存：${items.length} 条`;
+        if (items.length > 0) refreshSubscriptions();
+    } catch(e) {}
+    try {
+        const logs = await api('/api/logs');
+        document.getElementById('count-logs').innerText = logs.length;
+        logCount = logs.length;
+    } catch(e) {}
+    try {
+        const r = await api('/api/settings/lark');
+        document.getElementById('lark-status').innerText = '已配置';
+        document.getElementById('lark-status').className = 'stat-value success';
+        document.getElementById('setting-chat-id').value = r.chat_id || '';
+    } catch(e) {
+        document.getElementById('lark-status').innerText = '未配置';
+        document.getElementById('lark-status').style.color = '#ef4444';
+    }
+}
+
+// --- 订阅管理 ---
+async function refreshSubscriptions() {
+    try {
+        const r = await fetch('/subscriptions?format=json', {headers:{'Accept':'application/json'}});
+        if (!r.ok) return;
+        const d = await r.json();
+        document.getElementById('sub-total').innerText = d.stats?.total || 0;
+        document.getElementById('sub-followed').innerText = d.stats?.followed || 0;
+        document.getElementById('sub-auto').innerText = d.stats?.auto_followed || 0;
+
+        const fl = document.getElementById('followed-list');
+        fl.innerHTML = (d.followed||[]).length ? d.followed.map(c => `
+            <div class="sub-item">
+                <div><strong>${c.name}</strong>
+                    <span class="badge badge-${c.source==='wechat_mp'?'mp':c.source==='github'?'github':'aihot'}">${c.source}</span>
+                    ${c.auto_followed?'<span class="badge badge-auto">自动</span>':''}
+                    <span style="font-size:12px;color:#888;margin-left:8px">${c.article_count}篇</span>
+                </div>
+                <div style="display:flex;gap:8px">
+                    <button class="btn btn-sm" onclick="showRatings('${c.id}','${c.name}')">⭐</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="doUnfollow('${c.id}')">取关</button>
+                </div>
+            </div>`).join('') : '<div class="empty-state">暂无关注的创作者</div>';
+
+        const sl = document.getElementById('suggested-list');
+        sl.innerHTML = (d.suggested||[]).length ? d.suggested.map(c => `
+            <div class="sub-item">
+                <div><strong>${c.name}</strong><span class="badge badge-mp ms-2">${c.source}</span><span style="font-size:12px;color:#888;margin-left:8px">${c.article_count}篇</span></div>
+                <button class="btn btn-sm btn-outline-success" onclick="doFollow('${c.id}')">➕ 关注</button>
+            </div>`).join('') : '<div class="empty-state">暂无推荐创作者</div>';
+    } catch(e) { console.error(e); }
+}
+
+async function doFollow(cid) {
+    await postForm('/api/subscribe', {creator_id: cid});
+    refreshSubscriptions();
+}
+async function doUnfollow(cid) {
+    if (!confirm('确认取关？')) return;
+    await postForm('/api/unsubscribe', {creator_id: cid});
+    refreshSubscriptions();
+}
+
+// --- 评分弹窗 ---
+async function showRatings(cid, name) {
+    document.getElementById('ratingTitle').innerText = `${name} — 文章评分`;
+    const body = document.getElementById('ratingBody');
+    body.innerHTML = '加载中...';
+    document.getElementById('ratingModal').classList.add('show');
+    try {
+        const items = await api('/api/ratings?creator_id='+encodeURIComponent(cid));
+        body.innerHTML = items.map(a => `
+            <div class="sub-item">
+                <div style="font-size:13px;flex:1;margin-right:12px">${a.title||'(无标题)'}</div>
+                <div class="rating-btns">
+                    ${[1,2,3,4,5].map(n => `<button class="${a.user_rating===n?'rated':''}" onclick="rateArticle('${a.url}',${n})">${n}⭐</button>`).join('')}
+                </div>
+            </div>`).join('');
+    } catch(e) { body.innerHTML = '加载失败'; }
+}
+function closeRating() { document.getElementById('ratingModal').classList.remove('show'); }
+async function rateArticle(url, rating) {
+    await postForm('/api/rate', {url, rating});
+}
+
+// --- 设置 ---
+async function saveSettings() {
+    const cid = document.getElementById('setting-chat-id').value.trim();
+    const tok = document.getElementById('setting-gh-token').value.trim();
+    if (cid) await postForm('/api/settings/lark', {chat_id: cid});
+    if (tok) addLog('GitHub Token 请通过环境变量 GITHUB_TOKEN 设置', 'warn');
+    else if (cid) addLog('配置已保存', 'ok');
+}
+
+// --- 初始化 ---
+addLog('系统初始化完成，清新自然风格已就绪', 'info');
+refreshStats();
+setInterval(refreshStats, 15000);
 </script>
-{% block scripts %}{% endblock %}
 </body>
 </html>
