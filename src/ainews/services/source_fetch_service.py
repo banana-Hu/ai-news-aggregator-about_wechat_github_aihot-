@@ -95,14 +95,14 @@ def fetch_sources(
         all_items = ScoringService.score_all(all_items)
         _log(f"评分完成", "info")
 
-    # 自动发现创作者
+    # 记录文章 + 创作者（用于后续质量推荐）
     try:
-        from ainews.services.subscription_service import auto_discover
-        stats = auto_discover(all_items)
-        if stats["new"] or stats["auto_followed"]:
-            _log(f"创作者: 新增{stats['new']}, 更新{stats['updated']}, 自动关注{stats['auto_followed']}", "info")
+        from ainews.services.subscription_service import record_articles
+        stats = record_articles(all_items)
+        if stats["new_creators"]:
+            _log(f"发现 {stats['new_creators']} 位新创作者", "info")
     except Exception as e:
-        logger.debug(f"创作者发现跳过: {e}")
+        logger.debug(f"创作者记录跳过: {e}")
 
     return all_items
 

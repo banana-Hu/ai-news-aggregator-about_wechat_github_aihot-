@@ -17,7 +17,7 @@ from ainews.core import TEMPLATES_DIR, read_lark_chat_id, ensure_user_config_dir
 from ainews.services.source_fetch_service import fetch_sources, fetch_and_push
 from ainews.services.push_service import push_ai_daily
 from ainews.services.subscription_service import (
-    get_followed, get_suggested, follow, unfollow, rate_article,
+    get_followed, get_quality_recommendations, follow, unfollow, rate_article,
     get_article_ratings, get_creators_stats,
 )
 
@@ -100,12 +100,12 @@ async def settings_page(request: Request):
 async def subscriptions_page(request: Request):
     stats = get_creators_stats()
     followed = get_followed()
-    suggested = get_suggested()
+    recommended = get_quality_recommendations()
     return HTMLResponse(render("subscriptions.html",
         current_page="/subscriptions",
         stats=stats,
         followed=followed,
-        suggested=suggested,
+        recommended=recommended,
     ))
 
 

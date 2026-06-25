@@ -40,7 +40,7 @@ def _init_tables(conn: sqlite3.Connection):
             article_count   INTEGER DEFAULT 0,
             first_seen_at   TEXT,
             last_seen_at    TEXT,
-            is_followed     INTEGER DEFAULT 1,
+            is_followed     INTEGER DEFAULT 0,
             created_at      TEXT DEFAULT (datetime('now'))
         );
 
