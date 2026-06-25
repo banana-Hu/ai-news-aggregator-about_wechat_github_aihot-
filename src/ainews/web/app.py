@@ -16,6 +16,10 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from ainews.core import TEMPLATES_DIR, read_lark_chat_id, ensure_user_config_dir
 from ainews.services.source_fetch_service import fetch_sources, fetch_and_push
 from ainews.services.push_service import push_ai_daily
+from ainews.services.subscription_service import (
+    get_followed, get_suggested, follow, unfollow, rate_article,
+    get_article_ratings, get_creators_stats,
+)
 
 logger = logging.getLogger("ainews.web")
 
@@ -89,6 +93,56 @@ async def settings_page(request: Request):
         github_token=bool(os.environ.get("GITHUB_TOKEN")),
     ))
 
+
+# ========== 订阅管理 ==========
+
+@app.get("/subscriptions", response_class=HTMLResponse)
+async def subscriptions_page(request: Request):
+    stats = get_creators_stats()
+    followed = get_followed()
+    suggested = get_suggested()
+    return HTMLResponse(render("subscriptions.html",
+        current_page="/subscriptions",
+        stats=stats,
+        followed=followed,
+        suggested=suggested,
+    ))
+
+
+@app.post("/api/subscribe")
+async def api_subscribe(creator_id: str = Form("")):
+    if not creator_id:
+        return JSONResponse({"ok": False, "msg": "缺少 creator_id"})
+    follow(creator_id)
+    return JSONResponse({"ok": True})
+
+
+@app.post("/api/unsubscribe")
+async def api_unsubscribe(creator_id: str = Form("")):
+    if not creator_id:
+        return JSONResponse({"ok": False, "msg": "缺少 creator_id"})
+    unfollow(creator_id)
+    return JSONResponse({"ok": True})
+
+
+@app.post("/api/rate")
+async def api_rate(url: str = Form(""), rating: int = Form(0)):
+    if not url or rating < 1 or rating > 5:
+        return JSONResponse({"ok": False, "msg": "参数错误"})
+    rate_article(url, rating)
+    add_log(f"评分: {url[:50]}... → {rating} 星", "ok")
+    return JSONResponse({"ok": True})
+
+
+@app.get("/api/ratings")
+async def api_ratings(creator_id: str = ""):
+    if not creator_id:
+        return JSONResponse([])
+    ratings = get_article_ratings(creator_id)
+    return JSONResponse(ratings)
+
+
+# ========== API Routes ==========
 
 @app.get("/api/logs")
 async def api_logs():

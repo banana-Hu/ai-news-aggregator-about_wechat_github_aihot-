@@ -6,11 +6,11 @@
 import os
 from pathlib import Path
 
-# 包根目录: src/ainews/
-PACKAGE_ROOT = Path(__file__).resolve().parent
+# 包根目录: src/ainews/（core/ 的父目录）
+PACKAGE_ROOT = Path(__file__).resolve().parent.parent
 
 # 项目根目录: ai-news-aggregator/
-PROJECT_ROOT = PACKAGE_ROOT.parents[2]
+PROJECT_ROOT = PACKAGE_ROOT.parents[1]
 
 # 配置文件
 CONFIG_PATH = PROJECT_ROOT / "config" / "sources.yaml"

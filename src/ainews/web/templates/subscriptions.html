@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">👥 订阅管理</h4>
+</div>
+
+<!-- 统计卡片 -->
+<div class="row g-3 mb-3">
+    <div class="col-md-3"><div class="stat-card text-center"><div class="number text-primary">{{ stats.total }}</div><div class="text-secondary" style="font-size:13px;">已发现创作者</div></div></div>
+    <div class="col-md-3"><div class="stat-card text-center"><div class="number text-success">{{ stats.followed }}</div><div class="text-secondary" style="font-size:13px;">正在关注</div></div></div>
+    <div class="col-md-3"><div class="stat-card text-center"><div class="number text-warning">{{ stats.auto_followed }}</div><div class="text-secondary" style="font-size:13px;">自动关注</div></div></div>
+    <div class="col-md-3"><div class="stat-card text-center"><div class="number text-info">{{ suggested|length }}</div><div class="text-secondary" style="font-size:13px;">推荐关注</div></div></div>
+</div>
+
+<div class="row g-3">
+    <!-- 正在关注 -->
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-star me-1"></i>正在关注（{{ followed|length }}）</span>
+            </div>
+            <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                {% if followed %}
+                {% for c in followed %}
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-secondary">
+                    <div>
+                        <strong>{{ c.name }}</strong>
+                        <span class="badge badge-source bg-secondary ms-2">{{ c.source }}</span>
+                        {% if c.auto_followed %}<span class="badge bg-warning text-dark ms-1">自动</span>{% endif %}
+                        {% if c.quality_score > 0 %}
+                        <span class="ms-2" style="font-size:12px;color:#888;">均分 {{ "%.0f"|format(c.quality_score) }}</span>
+                        {% endif %}
+                        <span class="ms-2" style="font-size:11px;color:#555;">{{ c.article_count }} 篇</span>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-outline-info me-1" onclick="showRatings('{{ c.id }}', '{{ c.name }}')">
+                            <i class="bi bi-star"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="doUnfollow('{{ c.id }}')">
+                            取关
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="text-secondary text-center py-4">还没有关注的创作者</div>
+                <div class="text-secondary text-center" style="font-size:12px;">抓取数据后系统会自动发现创作者</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 推荐关注 -->
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-lightbulb me-1"></i>推荐关注</span>
+            </div>
+            <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                {% if suggested %}
+                {% for c in suggested %}
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-secondary">
+                    <div>
+                        <strong>{{ c.name }}</strong>
+                        <span class="badge badge-source bg-secondary ms-2">{{ c.source }}</span>
+                        <div style="font-size:11px;color:#666;">{{ c.article_count }} 篇文章</div>
+                    </div>
+                    <button class="btn btn-sm btn-outline-success" onclick="doFollow('{{ c.id }}')">
+                        <i class="bi bi-plus-circle"></i> 关注
+                    </button>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="text-secondary text-center py-4">暂无推荐</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 评分弹窗 -->
+<div class="modal fade" id="ratingsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title" id="ratingsTitle">文章评分</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="ratingsBody" style="max-height: 400px; overflow-y: auto;">
+                加载中...
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function doFollow(cid) {
+    fetch('/api/subscribe', {method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body: 'creator_id=' + encodeURIComponent(cid)
+    }).then(r=>r.json()).then(d=>{ if(d.ok) location.reload(); });
+}
+
+function doUnfollow(cid) {
+    if(!confirm('确认取关？')) return;
+    fetch('/api/unsubscribe', {method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body: 'creator_id=' + encodeURIComponent(cid)
+    }).then(r=>r.json()).then(d=>{ if(d.ok) location.reload(); });
+}
+
+function showRatings(cid, name) {
+    document.getElementById('ratingsTitle').innerText = name + ' — 文章评分';
+    const body = document.getElementById('ratingsBody');
+    body.innerHTML = '<div class="spinner-border spinner-border-sm"></div> 加载中...';
+
+    fetch('/api/ratings?creator_id=' + encodeURIComponent(cid))
+        .then(r=>r.json()).then(data=>{
+            body.innerHTML = data.map(a=>{
+                const stars = a.user_rating ? '⭐'.repeat(a.user_rating) + '☆'.repeat(5-a.user_rating) :
+                    '<span class="text-secondary">未评分</span>';
+                return `<div class="py-2 border-bottom border-secondary">
+                    <div style="font-size:13px;">${a.title || '(无标题)'}</div>
+                    <div class="d-flex justify-content-between align-items-center mt-1">
+                        <span class="me-2" id="stars-${a.url}">${stars}</span>
+                        <div>
+                            ${[1,2,3,4,5].map(n=>
+                                `<button class="btn btn-sm btn-outline-warning" onclick="rateArticle('${a.url}',${n})">${n}⭐</button>`
+                            ).join(' ')}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        });
+    new bootstrap.Modal('#ratingsModal').show();
+}
+
+function rateArticle(url, rating) {
+    fetch('/api/rate', {method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body: 'url=' + encodeURIComponent(url) + '&rating=' + rating
+    }).then(r=>r.json()).then(d=>{
+        if(d.ok) {
+            document.getElementById('stars-' + url).innerText = '⭐'.repeat(rating) + '☆'.repeat(5-rating);
+            showToast('评分已保存: ' + rating + ' 星', 'ok');
+        }
+    });
+}
+</script>
+{% endblock %}
