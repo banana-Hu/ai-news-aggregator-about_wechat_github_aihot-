@@ -25,3 +25,8 @@ ainews = "ainews.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+ainews = ["web/templates/*.html"]
+# 配置文件由 data-files 或 pip install 时手动复制
+# 运行时从 PROJECT_ROOT/config/sources.yaml 读取，不在包内

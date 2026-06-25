@@ -112,8 +112,9 @@ def _cmd_push(args):
 
     chat_id = args.chat_id
     if not chat_id:
-        env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env.lark")
-        if os.path.exists(env_path):
+        from ainews.core import LARK_ENV_PATH, USER_LARK_ENV_PATH
+        env_path = LARK_ENV_PATH if LARK_ENV_PATH.exists() else USER_LARK_ENV_PATH
+        if env_path.exists():
             with open(env_path) as f:
                 for line in f:
                     if line.startswith("LARK_CHAT_ID="):

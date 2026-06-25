@@ -8,19 +8,13 @@ import json
 import threading
 import logging
 from datetime import datetime, timezone
-from pathlib import Path
-
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
 import uvicorn
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from ainews.connectors.aihot_connector import AIHOTConnector
-from ainews.connectors.github_connector import GitHubConnector
-from ainews.connectors.wechat_mp_connector import WeChatMpConnector
-from ainews.services.dedup_service import DedupService
-from ainews.services.scoring_service import ScoringService
+from ainews.core import TEMPLATES_DIR, read_lark_chat_id, ensure_user_config_dir
+from ainews.services.source_fetch_service import fetch_sources, fetch_and_push
 from ainews.services.push_service import push_ai_daily
 
 logger = logging.getLogger("ainews.web")
@@ -31,9 +25,8 @@ log_history = []
 
 app = FastAPI(title="AI News Aggregator")
 
-here = Path(__file__).parent
 _jinja_env = Environment(
-    loader=FileSystemLoader(str(here / "templates")),
+    loader=FileSystemLoader(str(TEMPLATES_DIR)),
     autoescape=select_autoescape(["html"]),
 )
 
@@ -51,16 +44,7 @@ def add_log(msg: str, kind: str = "info"):
         log_history[:50] = []
 
 
-def load_lark_chat_id() -> str:
-    for p in [str(here.parent.parent.parent / ".env.lark"),
-              os.path.join(os.path.expanduser("~"), ".ainews", ".env.lark")]:
-        if os.path.exists(p):
-            with open(p, "r", encoding="utf-8", errors="replace") as f:
-                for line in f:
-                    line = line.strip()
-                    if line.startswith("LARK_CHAT_ID="):
-                        return line.split("=", 1)[1].strip()
-    return ""
+load_lark_chat_id = read_lark_chat_id  # 统一路径
 
 
 # ========== API Routes ==========
@@ -121,27 +105,12 @@ async def api_fetch(source: str = Form("all")):
     def task():
         global items_cache
         add_log(f"开始抓取: {source}", "info")
-        fetched = []
+        src_map = {"aihot": ["aihot"], "wechat_mp": ["wechat_mp"], "github": ["github"], "all": None}
         try:
-            if source in ("all", "aihot"):
-                items = AIHOTConnector({"max_items": 30}).safe_fetch()
-                add_log(f"AIHOT: {len(items)} 条", "ok")
-                fetched.extend(items)
-            if source in ("all", "wechat_mp"):
-                items = WeChatMpConnector({"extract_content": False, "max_articles": 10}).safe_fetch()
-                add_log(f"公众号: {len(items)} 条", "ok")
-                fetched.extend(items)
-            if source in ("all", "github"):
-                items = GitHubConnector({}).safe_fetch()
-                add_log(f"GitHub: {len(items)} 条", "ok")
-                fetched.extend(items)
-
-            if fetched:
-                dedup = DedupService()
-                fetched = dedup.deduplicate(fetched)
-                fetched = ScoringService.score_all(fetched)
-                items_cache = fetched
-                add_log(f"共 {len(fetched)} 条（去重评分后）", "ok")
+            items = fetch_sources(sources=src_map.get(source), log_func=add_log)
+            if items:
+                items_cache = items
+                add_log(f"共 {len(items)} 条", "ok")
             else:
                 add_log("未获取到数据", "warn")
         except Exception as e:

@@ -50,14 +50,19 @@ class NormalizedItem:
         return hashlib.sha256(self.url.encode("utf-8")).hexdigest()
 
     @property
-    def title_hash(self) -> str:
-        """基于标题的 SHA256 哈希，用于去重。"""
-        return hashlib.sha256(self.title.strip().lower().encode("utf-8")).hexdigest()
+    def title_hash(self) -> str | None:
+        """基于标题的 SHA256 哈希。标题为空时返回 None。"""
+        t = self.title.strip().lower()
+        if not t:
+            return None
+        return hashlib.sha256(t.encode("utf-8")).hexdigest()
 
     @property
-    def content_hash(self) -> str:
-        """基于摘要+内容的 SHA256 哈希，用于去重。"""
+    def content_hash(self) -> str | None:
+        """基于摘要+内容的 SHA256 哈希。内容为空时返回 None。"""
         text = (self.summary + " " + self.content).strip().lower()
+        if not text:
+            return None
         return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
     def to_dict(self) -> dict:

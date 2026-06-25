@@ -1,23 +1,14 @@
 """AI News Aggregator 桌面控制台 — Flet UI。"""
 
-import os
-import sys
 import json
 import threading
 from datetime import datetime, timezone
-from typing import Optional
 
 import flet as ft
 
-# 确保 src 在 sys.path
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-
-from ainews.connectors.aihot_connector import AIHOTConnector
-from ainews.connectors.github_connector import GitHubConnector
-from ainews.connectors.wechat_mp_connector import WeChatMpConnector
-from ainews.services.dedup_service import DedupService
-from ainews.services.scoring_service import ScoringService
-from ainews.services.push_service import push_ai_daily, build_post_content
+from ainews.core import read_lark_chat_id, ensure_user_config_dir
+from ainews.services.source_fetch_service import fetch_and_push, fetch_sources
+from ainews.services.push_service import push_ai_daily
 
 
 class AIAggregatorApp:
@@ -45,14 +36,7 @@ class AIAggregatorApp:
         self._build_ui()
 
     def _load_lark_chat_id(self) -> str:
-        """从 .env.lark 加载飞书群 ID。"""
-        env_paths = [
-            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), ".env.lark"),
-            os.path.join(os.path.expanduser("~"), ".ainews", ".env.lark"),
-        ]
-        for path in env_paths:
-            if os.path.exists(path):
-                with open(path) as f:
+        return read_lark_chat_id()
                     for line in f:
                         line = line.strip()
                         if line.startswith("LARK_CHAT_ID="):
@@ -278,37 +262,14 @@ class AIAggregatorApp:
             return
         if threaded:
             self._set_busy(True)
-
         try:
-            config_map = {
-                "aihot": ("AIHOT", AIHOTConnector, {"max_items": 50}),
-                "github": ("GitHub", GitHubConnector, {}),
-                "wechat_mp": ("WeChat MP", WeChatMpConnector, {"extract_content": False, "max_articles": 20}),
-            }
-
-            name, connector_cls, cfg = config_map.get(source, ("Unknown", None, {}))
-            if source == "all":
-                self._log("正在获取 AIHOT 数据...", "info")
-                items = AIHOTConnector({"max_items": 30}).safe_fetch()
-                self._log(f"AIHOT: 获取到 {len(items)} 条", "ok")
-                self._log("正在获取公众号文章...", "info")
-                items += WeChatMpConnector({"extract_content": False, "max_articles": 10}).safe_fetch()
-                self._log(f"公众号: 获取到 {len(items)} 条", "ok" if len(items) > 0 else "warn")
-            else:
-                self._log(f"正在获取 {name} 数据...", "info")
-                items = connector_cls(cfg).safe_fetch()
-                self._log(f"{name}: 获取到 {len(items)} 条", "ok" if len(items) > 0 else "warn")
-
+            src_map = {"aihot": ["aihot"], "github": ["github"], "wechat_mp": ["wechat_mp"], "all": None}
+            items = fetch_sources(sources=src_map.get(source), log_func=self._log)
             if items:
-                dedup = DedupService()
-                items = dedup.deduplicate(items)
-                items = ScoringService.score_all(items)
-                self._log(f"去重评分后: {len(items)} 条", "ok")
                 self.items = items
-
+            self._log(f"共 {len(items)} 条", "ok" if items else "warn")
         except Exception as e:
             self._log(f"抓取异常: {e}", "err")
-
         if threaded:
             self._set_busy(False)
 
@@ -317,24 +278,9 @@ class AIAggregatorApp:
             return
         self._set_busy(True)
         try:
-            self._log("开始抓取全部数据源...", "info")
-            items = []
-            items += AIHOTConnector({"max_items": 30}).safe_fetch()
-            items += WeChatMpConnector({"extract_content": False, "max_articles": 10}).safe_fetch()
-            self._log(f"原始: {len(items)} 条", "info")
-
-            dedup = DedupService()
-            items = dedup.deduplicate(items)
-            items = ScoringService.score_all(items)
-            self._log(f"去重评分: {len(items)} 条", "ok")
-            self.items = items
-
-            if items and self.lark_chat_id:
-                self._log("正在推送飞书...", "info")
-                ok = push_ai_daily(items, chat_id=self.lark_chat_id, chat_name=None)
-                self._log("飞书推送成功 ✅" if ok else "飞书推送失败 ❌", "ok" if ok else "err")
-            elif not self.lark_chat_id:
-                self._log("未配置飞书群 ID，跳过推送", "warn")
+            ok = fetch_and_push(log_func=self._log)
+            if ok:
+                self._log("流程完成 ✅", "ok")
         except Exception as e:
             self._log(f"流程异常: {e}", "err")
         self._set_busy(False)
@@ -348,13 +294,7 @@ class AIAggregatorApp:
         self._set_busy(True)
         try:
             self._log("获取公众号文章...", "info")
-            items = WeChatMpConnector({"extract_content": False, "max_articles": 20}).safe_fetch()
-            self._log(f"获取到 {len(items)} 条", "ok")
-            if items and self.lark_chat_id:
-                ok = push_ai_daily(items, chat_id=self.lark_chat_id, chat_name=None)
-                self._log(f"公众号链接已推送 {'✅' if ok else '❌'}", "ok" if ok else "err")
-            elif not self.lark_chat_id:
-                self._log("未配置飞书群 ID", "warn")
+            fetch_and_push(sources=["wechat_mp"], log_func=self._log)
         except Exception as e:
             self._log(f"异常: {e}", "err")
         self._set_busy(False)
