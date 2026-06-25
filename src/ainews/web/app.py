@@ -10,6 +10,7 @@ import logging
 from datetime import datetime, timezone
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 import uvicorn
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -27,7 +28,14 @@ logger = logging.getLogger("ainews.web")
 items_cache = []
 log_history = []
 
+from pathlib import Path
+
 app = FastAPI(title="AI News Aggregator")
+
+# Mount static files
+STATIC_DIR = Path(__file__).parent / "static"
+STATIC_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 _jinja_env = Environment(
     loader=FileSystemLoader(str(TEMPLATES_DIR)),

@@ -1,91 +1,131 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0">📡 数据抓取</h4>
+
+<div class="flex-between mb-24">
+  <div>
+    <h1 class="page-title"><i class="bi bi-cloud-download"></i>数据抓取</h1>
+    <p class="page-subtitle">采集任务执行台</p>
+  </div>
+  <div class="flex-row">
+    <span class="text-muted fs-13" id="fetch-status">就绪</span>
+  </div>
 </div>
 
-<div class="row g-3">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-terminal me-1"></i>运行日志</span>
-                <button class="btn btn-sm btn-outline-secondary" onclick="refreshLogs()">
-                    <i class="bi bi-arrow-clockwise"></i> 刷新
-                </button>
-            </div>
-            <div class="card-body" id="log-area" style="max-height: 500px; overflow-y: auto; font-size: 12px;">
-                {% if logs %}
-                {% for log in logs %}
-                <div class="log-entry">
-                    <span class="log-time">{{ log.time }}</span>
-                    <span class="log-{{ log.kind }}">{{ log.msg }}</span>
-                </div>
-                {% endfor %}
-                {% else %}
-                <div class="text-secondary text-center py-4">暂无日志，点击下方按钮开始抓取</div>
-                {% endif %}
-            </div>
-        </div>
+<div class="grid-70-30">
+  <!-- Task Log -->
+  <div class="card">
+    <div class="card-header flex-between">
+      <span><i class="bi bi-terminal"></i>任务日志</span>
+      <div class="flex-row gap-12">
+        <label class="flex-row" style="font-size:12px;color:var(--text-muted);">
+          <input type="checkbox" checked id="autoscroll" style="accent-color:var(--brand);"> 自动滚动
+        </label>
+        <button class="btn btn-ghost btn-sm" onclick="clearLogs()"><i class="bi bi-trash"></i></button>
+      </div>
     </div>
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header py-2"><i class="bi bi-grid me-1"></i>操作面板</div>
-            <div class="card-body">
-                <button class="btn btn-primary w-100 mb-2" onclick="fetchAll()">
-                    <i class="bi bi-cloud-download"></i> 📥 抓取全部
-                </button>
-                <hr class="text-secondary">
-                <button class="btn btn-outline-primary w-100 mb-2" onclick="fetchSource('aihot')">
-                    🔥 仅 AIHOT
-                </button>
-                <button class="btn btn-outline-success w-100 mb-2" onclick="fetchSource('wechat_mp')">
-                    📢 仅公众号
-                </button>
-                <button class="btn btn-outline-light w-100 mb-2" onclick="fetchSource('github')">
-                    🐙 仅 GitHub
-                </button>
-                <hr class="text-secondary">
-                <button class="btn btn-outline-danger w-100" onclick="clearLogs()">
-                    <i class="bi bi-trash"></i> 清空日志
-                </button>
-            </div>
+    <div class="log-panel" style="border:none; border-radius:0;">
+      <div class="log-body" id="log-area">
+        {% if logs %}
+        {% for log in logs %}
+        <div class="log-entry log-entry-{{ log.kind }}">
+          <span class="log-time">{{ log.time }}</span>
+          <span class="log-msg">{{ log.msg }}</span>
         </div>
+        {% endfor %}
+        {% else %}
+        <div class="log-empty"><i class="bi bi-journal-text"></i>暂无日志<br><span class="text-muted fs-12">点击右侧开始采集</span></div>
+        {% endif %}
+      </div>
     </div>
+  </div>
+
+  <!-- Control Panel -->
+  <div class="card">
+    <div class="card-header"><i class="bi bi-sliders"></i>采集配置</div>
+    <div class="card-body">
+      <div class="mb-16">
+        <div class="form-label">数据源</div>
+        <div class="checkbox-group" id="source-group">
+          <label class="checkbox-item checked"><input type="checkbox" value="aihot" checked> AIHOT 资讯</label>
+          <label class="checkbox-item checked"><input type="checkbox" value="wechat_mp" checked> 微信公众号</label>
+          <label class="checkbox-item"><input type="checkbox" value="github"> GitHub 项目</label>
+        </div>
+      </div>
+
+      <div class="mb-16">
+        <div class="form-label">快捷预设</div>
+        <div class="flex-row" style="flex-wrap:wrap; gap:6px;">
+          <button class="btn btn-sm btn-ghost" onclick="preset('all')">全部</button>
+          <button class="btn btn-sm btn-ghost" onclick="preset('news')">资讯源</button>
+          <button class="btn btn-sm btn-ghost" onclick="preset('mp')">公众号</button>
+          <button class="btn btn-sm btn-ghost" onclick="preset('oss')">开源项目</button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary w-full btn-lg" onclick="startFetch()" id="fetch-btn">
+        <i class="bi bi-play-fill"></i>开始采集
+      </button>
+
+      <div class="mt-16 text-muted fs-12">
+        <i class="bi bi-info-circle"></i> 采集完成后自动去重、评分、发现创作者
+      </div>
+    </div>
+  </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
-function fetchAll() { triggerFetch('all'); }
-function fetchSource(s) { triggerFetch(s); }
+function getSources() {
+  return [...document.querySelectorAll('#source-group input:checked')].map(c=>c.value);
+}
 
-function triggerFetch(source) {
-    showToast('抓取任务已启动', 'info');
-    fetch('/api/fetch', {method:'POST',
-        headers:{'Content-Type':'application/x-www-form-urlencoded'},
-        body: 'source=' + source
-    }).then(r=>r.json()).then(d=>{
-        showToast(d.msg, 'ok');
-        setTimeout(()=>refreshLogs(), 2000);
-    });
+function preset(type) {
+  const checks = document.querySelectorAll('#source-group input');
+  const maps = {
+    all: ['aihot','wechat_mp','github'],
+    news: ['aihot'],
+    mp: ['wechat_mp'],
+    oss: ['github']
+  };
+  const vals = maps[type] || [];
+  checks.forEach(c => { c.checked = vals.includes(c.value); c.parentElement.classList.toggle('checked', c.checked); });
+}
+
+document.querySelectorAll('#source-group input').forEach(c=>{
+  c.addEventListener('change', ()=>c.parentElement.classList.toggle('checked', c.checked));
+});
+
+function startFetch() {
+  const sources = getSources();
+  if(!sources.length) { showToast('请选择数据源','warn'); return; }
+  const btn = document.getElementById('fetch-btn');
+  toggleLoading(btn, true, '采集');
+  document.getElementById('fetch-status').innerHTML = '<span class="spinner-border spinner-border-sm text-brand"></span> 运行中';
+
+  Promise.all(sources.map(s=>
+    fetch('/api/fetch',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'source='+s})
+      .then(r=>r.json())
+  )).then(()=>{
+    toggleLoading(btn, false, '采集');
+    document.getElementById('fetch-status').innerHTML = '<span class="status-ok">已完成</span>';
+    showToast('采集完成','ok');
+    setTimeout(refreshLogs, 1500);
+  }).catch(()=>showToast('采集失败','err'));
 }
 
 function refreshLogs() {
-    fetch('/api/logs').then(r=>r.json()).then(logs=>{
-        const area = document.getElementById('log-area');
-        area.innerHTML = logs.slice(-50).map(l=>
-            `<div class="log-entry"><span class="log-time">${l.time}</span><span class="log-${l.kind}">${l.msg}</span></div>`
-        ).join('');
-    });
+  fetch('/api/logs').then(r=>r.json()).then(logs=>{
+    const el = document.getElementById('log-area');
+    el.innerHTML = logs.length ? logs.slice(-50).map(l=>
+      `<div class="log-entry log-entry-${l.kind}"><span class="log-time">${l.time}</span><span class="log-msg">${l.msg}</span></div>`
+    ).join('') : '<div class="log-empty"><i class="bi bi-journal-text"></i>暂无日志</div>';
+    if(document.getElementById('autoscroll').checked) el.parentElement.scrollTop = el.parentElement.scrollHeight;
+  });
 }
 
-function clearLogs() {
-    fetch('/api/logs').then(()=>{
-        document.getElementById('log-area').innerHTML = '<div class="text-secondary text-center py-4">日志已清空</div>';
-    });
-}
-
-// 自动刷新日志
+function clearLogs() { document.getElementById('log-area').innerHTML = '<div class="log-empty"><i class="bi bi-journal-text"></i>暂无日志</div>'; }
 setInterval(refreshLogs, 3000);
 </script>
 {% endblock %}

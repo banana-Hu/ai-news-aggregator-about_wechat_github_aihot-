@@ -1,150 +1,141 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0">👥 订阅管理</h4>
+
+<div class="flex-between mb-24">
+  <div>
+    <h1 class="page-title"><i class="bi bi-people"></i>订阅管理</h1>
+    <p class="page-subtitle">创作者来源维护与推荐</p>
+  </div>
 </div>
 
-<!-- 统计卡片 -->
-<div class="row g-3 mb-3">
-    <div class="col-md-3"><div class="stat-card text-center"><div class="number text-primary">{{ stats.total }}</div><div class="text-secondary" style="font-size:13px;">已发现创作者</div></div></div>
-    <div class="col-md-3"><div class="stat-card text-center"><div class="number text-success">{{ stats.followed }}</div><div class="text-secondary" style="font-size:13px;">正在关注</div></div></div>
-    <div class="col-md-3"><div class="stat-card text-center"><div class="number text-warning">{{ stats.recommendable }}</div><div class="text-secondary" style="font-size:13px;">优质创作者</div></div></div>
-    <div class="col-md-3"><div class="stat-card text-center"><div class="number text-info">{{ recommended|length }}</div><div class="text-secondary" style="font-size:13px;">优质推荐</div></div></div>
+<div class="metric-cards">
+  <div class="metric-card">
+    <div class="metric-value text-brand">{{ stats.total }}</div>
+    <div class="metric-label">已发现来源</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-value text-success">{{ stats.followed }}</div>
+    <div class="metric-label">已订阅</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-value text-warning">{{ stats.recommendable }}</div>
+    <div class="metric-label">可推荐</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-value text-info">{{ recommended|length }}</div>
+    <div class="metric-label">优质推荐</div>
+  </div>
 </div>
 
-<div class="row g-3">
-    <!-- 正在关注 -->
-    <div class="col-md-7">
-        <div class="card">
-            <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-star me-1"></i>正在关注（{{ followed|length }}）</span>
+<div class="grid-70-30">
+  <!-- Followed -->
+  <div class="card">
+    <div class="card-header"><i class="bi bi-star"></i>已订阅来源（{{ followed|length }}）</div>
+    <div class="card-body p-0" style="max-height:520px; overflow-y:auto;">
+      {% if followed %}
+      {% for c in followed %}
+      <div class="creator-row" style="padding:12px 20px;">
+        <div class="creator-info">
+          <div class="creator-avatar">{{ c.name[:1] }}</div>
+          <div>
+            <div class="creator-name">{{ c.name }}</div>
+            <div class="creator-meta">
+              <span class="badge badge-muted me-1">{{ c.source }}</span>
+              质量 {{ "%.0f"|format(c.quality_score) }}
             </div>
-            <div class="card-body" style="max-height: 500px; overflow-y: auto;">
-                {% if followed %}
-                {% for c in followed %}
-                <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-secondary">
-                    <div>
-                        <strong>{{ c.name }}</strong>
-                        <span class="badge badge-source bg-secondary ms-2">{{ c.source }}</span>
-                        {% if c.quality_score > 0 %}
-                        <span class="ms-2" style="font-size:12px;color:#888;">质量分 {{ "%.0f"|format(c.quality_score) }}</span>
-                        {% endif %}
-                    </div>
-                    <div>
-                        <button class="btn btn-sm btn-outline-info me-1" onclick="showRatings('{{ c.id }}', '{{ c.name }}')">
-                            <i class="bi bi-star"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="doUnfollow('{{ c.id }}')">
-                            取关
-                        </button>
-                    </div>
-                </div>
-                {% endfor %}
-                {% else %}
-                <div class="text-secondary text-center py-4">还没有关注的创作者</div>
-                <div class="text-secondary text-center" style="font-size:12px;">抓取数据后系统会自动发现创作者</div>
-                {% endif %}
-            </div>
+          </div>
         </div>
-    </div>
-
-    <!-- 优质推荐 -->
-    <div class="col-md-5">
-        <div class="card">
-            <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-lightbulb me-1"></i>优质推荐</span>
-            </div>
-            <div class="card-body" style="max-height: 500px; overflow-y: auto;">
-                {% if recommended %}
-                {% for c in recommended %}
-                <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-secondary">
-                    <div>
-                        <strong>{{ c.name }}</strong>
-                        <span class="badge badge-source bg-secondary ms-2">{{ c.source }}</span>
-                        <div style="font-size:11px;color:#666;">{{ c.reason }}</div>
-                    </div>
-                    <button class="btn btn-sm btn-outline-success" onclick="doFollow('{{ c.id }}')">
-                        <i class="bi bi-plus-circle"></i> 关注
-                    </button>
-                </div>
-                {% endfor %}
-                {% else %}
-                <div class="text-secondary text-center py-4">暂无推荐</div>
-                {% endif %}
-            </div>
+        <div class="flex-row">
+          <button class="btn btn-ghost btn-sm" onclick="showRatings('{{ c.id }}','{{ c.name }}')"><i class="bi bi-star"></i> 评分</button>
+          <button class="btn btn-ghost btn-sm text-danger" onclick="doUnfollow('{{ c.id }}')"><i class="bi bi-x-circle"></i> 取消</button>
         </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div class="log-empty"><i class="bi bi-person-plus"></i>暂无订阅<br><span class="text-muted fs-12">采集数据后查看推荐</span></div>
+      {% endif %}
     </div>
+  </div>
+
+  <!-- Recommended -->
+  <div class="card">
+    <div class="card-header"><i class="bi bi-lightbulb"></i>发现优质创作者</div>
+    <div class="card-body p-0" style="max-height:520px; overflow-y:auto;">
+      {% if recommended %}
+      {% for c in recommended %}
+      <div class="creator-row" style="padding:12px 20px;">
+        <div class="creator-info">
+          <div class="creator-avatar">{{ c.name[:1] }}</div>
+          <div>
+            <div class="creator-name">{{ c.name }}</div>
+            <div class="creator-meta">{{ c.reason }}</div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="doFollow('{{ c.id }}')"><i class="bi bi-plus-circle"></i> 关注</button>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div class="log-empty"><i class="bi bi-lightbulb"></i>暂无推荐<br><span class="text-muted fs-12">采集更多数据以发现优质创作者</span></div>
+      {% endif %}
+    </div>
+  </div>
 </div>
 
-<!-- 评分弹窗 -->
+<!-- Rating Modal -->
 <div class="modal fade" id="ratingsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content bg-dark text-light">
-            <div class="modal-header border-secondary">
-                <h5 class="modal-title" id="ratingsTitle">文章评分</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="ratingsBody" style="max-height: 400px; overflow-y: auto;">
-                加载中...
-            </div>
-        </div>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="ratingsTitle">文章评分</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="ratingsBody" style="max-height:400px;overflow-y:auto;"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+      </div>
     </div>
+  </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
 function doFollow(cid) {
-    fetch('/api/subscribe', {method:'POST',
-        headers:{'Content-Type':'application/x-www-form-urlencoded'},
-        body: 'creator_id=' + encodeURIComponent(cid)
-    }).then(r=>r.json()).then(d=>{ if(d.ok) location.reload(); });
+  fetch('/api/subscribe',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'creator_id='+encodeURIComponent(cid)})
+  .then(r=>r.json()).then(d=>{ if(d.ok) location.reload(); });
 }
-
 function doUnfollow(cid) {
-    if(!confirm('确认取关？')) return;
-    fetch('/api/unsubscribe', {method:'POST',
-        headers:{'Content-Type':'application/x-www-form-urlencoded'},
-        body: 'creator_id=' + encodeURIComponent(cid)
-    }).then(r=>r.json()).then(d=>{ if(d.ok) location.reload(); });
+  if(!confirm('确认取消关注？')) return;
+  fetch('/api/unsubscribe',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'creator_id='+encodeURIComponent(cid)})
+  .then(r=>r.json()).then(d=>{ if(d.ok) location.reload(); });
 }
-
 function showRatings(cid, name) {
-    document.getElementById('ratingsTitle').innerText = name + ' — 文章评分';
-    const body = document.getElementById('ratingsBody');
-    body.innerHTML = '<div class="spinner-border spinner-border-sm"></div> 加载中...';
-
-    fetch('/api/ratings?creator_id=' + encodeURIComponent(cid))
-        .then(r=>r.json()).then(data=>{
-            body.innerHTML = data.map(a=>{
-                const stars = a.user_rating ? '⭐'.repeat(a.user_rating) + '☆'.repeat(5-a.user_rating) :
-                    '<span class="text-secondary">未评分</span>';
-                return `<div class="py-2 border-bottom border-secondary">
-                    <div style="font-size:13px;">${a.title || '(无标题)'}</div>
-                    <div class="d-flex justify-content-between align-items-center mt-1">
-                        <span class="me-2" id="stars-${a.url}">${stars}</span>
-                        <div>
-                            ${[1,2,3,4,5].map(n=>
-                                `<button class="btn btn-sm btn-outline-warning" onclick="rateArticle('${a.url}',${n})">${n}⭐</button>`
-                            ).join(' ')}
-                        </div>
-                    </div>
-                </div>`;
-            }).join('');
-        });
-    new bootstrap.Modal('#ratingsModal').show();
+  document.getElementById('ratingsTitle').innerText = name;
+  const body = document.getElementById('ratingsBody');
+  body.innerHTML = '<div class="text-center py-4"><span class="spinner-border spinner-border-sm text-brand"></span></div>';
+  fetch('/api/ratings?creator_id='+encodeURIComponent(cid)).then(r=>r.json()).then(data=>{
+    body.innerHTML = data.map(a=>{
+      const stars = a.user_rating ? '★'.repeat(a.user_rating)+'☆'.repeat(5-a.user_rating) : '<span class="text-muted">未评分</span>';
+      return `<div class="py-2" style="border-bottom:1px solid var(--border-light);">
+        <div class="fs-13 mb-2">${a.title || '(无标题)'}</div>
+        <div class="flex-between">
+          <span id="stars-${a.url}">${stars}</span>
+          <div class="flex-row gap-12">${[1,2,3,4,5].map(n=>`<button class="btn btn-ghost btn-sm" onclick="rateArticle('${a.url}',${n})">${n}★</button>`).join('')}</div>
+        </div>
+      </div>`;
+    }).join('');
+  });
+  new bootstrap.Modal('#ratingsModal').show();
 }
-
 function rateArticle(url, rating) {
-    fetch('/api/rate', {method:'POST',
-        headers:{'Content-Type':'application/x-www-form-urlencoded'},
-        body: 'url=' + encodeURIComponent(url) + '&rating=' + rating
-    }).then(r=>r.json()).then(d=>{
-        if(d.ok) {
-            document.getElementById('stars-' + url).innerText = '⭐'.repeat(rating) + '☆'.repeat(5-rating);
-            showToast('评分已保存: ' + rating + ' 星', 'ok');
-        }
-    });
+  fetch('/api/rate',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'url='+encodeURIComponent(url)+'&rating='+rating})
+  .then(r=>r.json()).then(d=>{
+    if(d.ok) {
+      document.getElementById('stars-'+url).innerText = '★'.repeat(rating)+'☆'.repeat(5-rating);
+      showToast('已评分: '+rating+' 星','ok');
+    }
+  });
 }
 </script>
 {% endblock %}

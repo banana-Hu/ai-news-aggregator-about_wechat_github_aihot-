@@ -1,100 +1,85 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0">📊 控制台概览</h4>
-    <div>
-        <a href="/fetch" class="btn btn-primary btn-sm me-2"><i class="bi bi-cloud-download"></i> 去抓取</a>
-        <a href="/push" class="btn btn-outline-light btn-sm"><i class="bi bi-send"></i> 去推送</a>
-    </div>
-</div>
-<p class="text-secondary" style="margin-top:-8px;">AI 情报聚合日报系统 · Web 控制端</p>
 
-<div class="row g-3 mt-2">
-    <div class="col-md-3">
-        <div class="stat-card text-center">
-            <div class="number text-primary">{{ items_count }}</div>
-            <div class="text-secondary mt-1" style="font-size: 13px;">已缓存条目</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card text-center">
-            <div class="number text-success">{{ log_count }}</div>
-            <div class="text-secondary mt-1" style="font-size: 13px;">操作日志条数</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card text-center">
-            <div class="number {{ 'text-success' if lark_configured else 'text-danger' }}">
-                <i class="bi {{ 'bi-check-circle' if lark_configured else 'bi-x-circle' }}"></i>
-            </div>
-            <div class="text-secondary mt-1" style="font-size: 13px;">飞书推送 {{ '已配置' if lark_configured else '未配置' }}</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card text-center">
-            <div class="number text-info">
-                <i class="bi bi-circle-fill text-success" style="font-size: 16px;"></i>
-            </div>
-            <div class="text-secondary mt-1" style="font-size: 13px;">服务运行中</div>
-        </div>
-    </div>
+<div class="flex-between mb-24">
+  <div>
+    <h1 class="page-title"><i class="bi bi-speedometer2"></i>控制台概览</h1>
+    <p class="page-subtitle">AI 情报聚合日报系统 · Web 控制端</p>
+  </div>
+  <div class="flex-row">
+    <a href="/fetch" class="btn btn-primary"><i class="bi bi-cloud-download"></i>采集数据</a>
+    <a href="/push" class="btn btn-secondary"><i class="bi bi-send"></i>发布日报</a>
+  </div>
 </div>
 
-<div class="row g-3 mt-2">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header py-2"><i class="bi bi-lightning me-1"></i>快速操作</div>
-            <div class="card-body">
-                <button class="btn btn-primary w-100 mb-2" onclick="quickFetch()">
-                    <i class="bi bi-cloud-download"></i> 🚀 抓取全部数据源
-                </button>
-                <div class="row g-2">
-                    <div class="col-6">
-                        <button class="btn btn-outline-light w-100" onclick="quickFetch('aihot')">
-                            🔥 仅 AIHOT
-                        </button>
-                    </div>
-                    <div class="col-6">
-                        <button class="btn btn-outline-light w-100" onclick="quickFetch('wechat_mp')">
-                            📢 仅公众号
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+<div class="metric-cards">
+  <div class="metric-card">
+    <div class="metric-value text-brand">{{ items_count }}</div>
+    <div class="metric-label">缓存条目</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-value text-primary">{{ log_count }}</div>
+    <div class="metric-label">操作日志条数</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-value text-{{ 'success' if lark_configured else 'danger' }}">{{ 'check' if lark_configured else 'x' }}</div>
+    <div class="metric-label">飞书推送 {{ '已配置' if lark_configured else '未配置' }}</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-value text-success" style="font-size:24px;">
+      <span class="status-ok">运行中</span>
     </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header py-2"><i class="bi bi-clock-history me-1"></i>最近日志</div>
-            <div class="card-body" style="max-height: 200px; overflow-y: auto;">
-                {% if recent_logs %}
-                {% for log in recent_logs %}
-                <div class="log-entry">
-                    <span class="log-time">{{ log.time }}</span>
-                    <span class="log-{{ log.kind }}">{{ log.msg }}</span>
-                </div>
-                {% endfor %}
-                {% else %}
-                <div class="text-secondary text-center py-3">暂无日志</div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
+    <div class="metric-label">系统状态</div>
+  </div>
 </div>
+
+<div class="grid-70-30">
+  <div class="card">
+    <div class="card-header"><i class="bi bi-lightning-charge"></i>快速操作</div>
+    <div class="card-body">
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="quickFetch()"><i class="bi bi-cloud-download"></i>全部采集</button>
+        <button class="btn btn-secondary" onclick="quickFetch('aihot')">AIHOT 资讯</button>
+        <button class="btn btn-secondary" onclick="quickFetch('wechat_mp')">公众号文章</button>
+        <button class="btn btn-secondary" onclick="quickFetch('github')">GitHub 项目</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><i class="bi bi-clock-history"></i>最近日志</div>
+    <div class="card-body p-0">
+      {% if recent_logs %}
+      <div class="log-panel" style="border:none; border-radius:0;">
+        <div class="log-body" style="max-height:180px;">
+          {% for log in recent_logs %}
+          <div class="log-entry log-entry-{{ log.kind }}">
+            <span class="log-time">{{ log.time }}</span>
+            <span class="log-msg">{{ log.msg }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% else %}
+      <div class="log-empty"><i class="bi bi-journal-text"></i>暂无日志</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
 function quickFetch(source) {
-    const btn = event.target;
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 抓取中...';
-    fetch('/api/fetch', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
-        body: 'source=' + (source || 'all')
-    }).then(r=>r.json()).then(d=>{
-        showToast(d.msg, 'ok');
-        setTimeout(()=>location.reload(), 1500);
-    }).catch(e=>showToast('请求失败','err'));
+  fetch('/api/fetch', {
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body: 'source=' + (source || 'all')
+  }).then(r=>r.json()).then(d=>{
+    showToast(d.msg, 'ok');
+    setTimeout(()=>location.reload(), 1500);
+  }).catch(()=>showToast('请求失败', 'err'));
 }
 </script>
 {% endblock %}
