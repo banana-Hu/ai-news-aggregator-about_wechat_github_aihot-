@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">📡 数据抓取</h4>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-terminal me-1"></i>运行日志</span>
+                <button class="btn btn-sm btn-outline-secondary" onclick="refreshLogs()">
+                    <i class="bi bi-arrow-clockwise"></i> 刷新
+                </button>
+            </div>
+            <div class="card-body" id="log-area" style="max-height: 500px; overflow-y: auto; font-size: 12px;">
+                {% if logs %}
+                {% for log in logs %}
+                <div class="log-entry">
+                    <span class="log-time">{{ log.time }}</span>
+                    <span class="log-{{ log.kind }}">{{ log.msg }}</span>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="text-secondary text-center py-4">暂无日志，点击下方按钮开始抓取</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header py-2"><i class="bi bi-grid me-1"></i>操作面板</div>
+            <div class="card-body">
+                <button class="btn btn-primary w-100 mb-2" onclick="fetchAll()">
+                    <i class="bi bi-cloud-download"></i> 📥 抓取全部
+                </button>
+                <hr class="text-secondary">
+                <button class="btn btn-outline-primary w-100 mb-2" onclick="fetchSource('aihot')">
+                    🔥 仅 AIHOT
+                </button>
+                <button class="btn btn-outline-success w-100 mb-2" onclick="fetchSource('wechat_mp')">
+                    📢 仅公众号
+                </button>
+                <button class="btn btn-outline-light w-100 mb-2" onclick="fetchSource('github')">
+                    🐙 仅 GitHub
+                </button>
+                <hr class="text-secondary">
+                <button class="btn btn-outline-danger w-100" onclick="clearLogs()">
+                    <i class="bi bi-trash"></i> 清空日志
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function fetchAll() { triggerFetch('all'); }
+function fetchSource(s) { triggerFetch(s); }
+
+function triggerFetch(source) {
+    showToast('抓取任务已启动', 'info');
+    fetch('/api/fetch', {method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body: 'source=' + source
+    }).then(r=>r.json()).then(d=>{
+        showToast(d.msg, 'ok');
+        setTimeout(()=>refreshLogs(), 2000);
+    });
+}
+
+function refreshLogs() {
+    fetch('/api/logs').then(r=>r.json()).then(logs=>{
+        const area = document.getElementById('log-area');
+        area.innerHTML = logs.slice(-50).map(l=>
+            `<div class="log-entry"><span class="log-time">${l.time}</span><span class="log-${l.kind}">${l.msg}</span></div>`
+        ).join('');
+    });
+}
+
+function clearLogs() {
+    fetch('/api/logs').then(()=>{
+        document.getElementById('log-area').innerHTML = '<div class="text-secondary text-center py-4">日志已清空</div>';
+    });
+}
+
+// 自动刷新日志
+setInterval(refreshLogs, 3000);
+</script>
+{% endblock %}

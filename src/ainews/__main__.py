@@ -44,14 +44,26 @@ def cli_main():
     push_p.add_argument("--chat-id", type=str, default="")
     push_p.add_argument("--dry-run", action="store_true")
 
+    # web
+    web_p = sub.add_parser("web", help="启动 Web 控制面板")
+    web_p.add_argument("--host", type=str, default="0.0.0.0")
+    web_p.add_argument("--port", "-p", type=int, default=8099)
+
     args = parser.parse_args()
 
     if args.command == "fetch":
         _cmd_fetch(args)
     elif args.command == "push":
         _cmd_push(args)
+    elif args.command == "web":
+        _cmd_web(args)
     else:
         parser.print_help()
+
+
+def _cmd_web(args):
+    from ainews.web.app import run_server
+    run_server(host=args.host, port=args.port)
 
 
 def _cmd_fetch(args):

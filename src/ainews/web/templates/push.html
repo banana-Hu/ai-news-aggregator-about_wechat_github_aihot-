@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">📤 飞书推送</h4>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header py-2"><i class="bi bi-send me-1"></i>推送控制</div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <span class="badge bg-{{ 'success' if lark_configured else 'danger' }} me-1">
+                        {{ '✅ 已配置' if lark_configured else '❌ 未配置' }}
+                    </span>
+                    飞书群: <code>{{ chat_id[:25] + '...' if chat_id else '未设置' }}</code>
+                </div>
+
+                <div class="mb-3">
+                    <span class="badge bg-info">{{ items_count }}</span> 条缓存数据可推送
+                </div>
+
+                <button class="btn btn-primary w-100 mb-2" onclick="doPush()" id="push-btn">
+                    <i class="bi bi-send"></i> 📤 推送飞书
+                </button>
+
+                <div class="text-secondary mt-2" style="font-size: 12px;">
+                    <i class="bi bi-info-circle"></i>
+                    推送前请先到「数据抓取」页抓取数据
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header py-2"><i class="bi bi-clock-history me-1"></i>推送日志</div>
+            <div class="card-body" id="push-log" style="max-height: 300px; overflow-y: auto;">
+                {% for log in logs %}
+                <div class="log-entry">
+                    <span class="log-time">{{ log.time }}</span>
+                    <span class="log-{{ log.kind }}">{{ log.msg }}</span>
+                </div>
+                {% else %}
+                <div class="text-secondary text-center py-4">暂无推送记录</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function doPush() {
+    const btn = document.getElementById('push-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 推送中...';
+    fetch('/api/push', {method:'POST'}).then(r=>r.json()).then(d=>{
+        if(d.ok) {
+            showToast(d.msg, 'ok');
+            setTimeout(()=>location.reload(), 2000);
+        } else {
+            showToast(d.msg, 'err');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-send"></i> 📤 推送飞书';
+        }
+    });
+}
+
+setInterval(()=>{
+    fetch('/api/logs').then(r=>r.json()).then(logs=>{
+        const el = document.getElementById('push-log');
+        el.innerHTML = logs.slice(-30).map(l=>
+            `<div class="log-entry"><span class="log-time">${l.time}</span><span class="log-${l.kind}">${l.msg}</span></div>`
+        ).join('');
+    });
+}, 3000);
+</script>
+{% endblock %}

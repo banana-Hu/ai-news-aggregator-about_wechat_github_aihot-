@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">⚙️ 设置</h4>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header py-2"><i class="bi bi-chat-dots me-1"></i>飞书推送配置</div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label text-secondary" style="font-size: 13px;">飞书群 ID</label>
+                    <input type="text" id="chat-id-input" class="form-control bg-dark text-light border-secondary"
+                           value="{{ chat_id }}" placeholder="oc_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                    <div class="form-text text-secondary" style="font-size: 11px;">
+                        从群设置底部获取，形如 oc_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                    </div>
+                </div>
+                <button class="btn btn-primary w-100" onclick="saveLark()">
+                    <i class="bi bi-floppy"></i> 保存配置
+                </button>
+            </div>
+        </div>
+        <div class="card mt-3">
+            <div class="card-header py-2"><i class="bi bi-info-circle me-1"></i>推送初始化向导</div>
+            <div class="card-body" style="font-size: 13px;">
+                <ol class="mb-0 text-secondary">
+                    <li>运行 <code>scripts/setup_lark_push.bat</code> 完成飞书认证</li>
+                    <li>脚本会自动搜索群并保存群 ID</li>
+                    <li>或手动在飞书开放平台创建应用</li>
+                    <li>将群 ID 填入上方输入框保存</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header py-2"><i class="bi bi-shield-check me-1"></i>环境变量</div>
+            <div class="card-body" style="font-size: 13px;">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span><code>GITHUB_TOKEN</code></span>
+                        <span class="badge bg-{{ 'success' if github_token else 'warning' }}">
+                            {{ '✅ 已设置' if github_token else '⚠️ 未设置' }}
+                        </span>
+                    </div>
+                    <div class="text-secondary" style="font-size: 11px;">
+                        未设置时速率限制 60 req/h，设置后 5000 req/h
+                    </div>
+                </div>
+                <hr class="text-secondary">
+                <div class="text-secondary" style="font-size: 12px;">
+                    <i class="bi bi-gear me-1"></i>
+                    更多配置请编辑项目根目录的 <code>config/sources.yaml</code>
+                </div>
+            </div>
+        </div>
+        <div class="card mt-3">
+            <div class="card-header py-2"><i class="bi bi-box-seam me-1"></i>系统信息</div>
+            <div class="card-body" style="font-size: 13px;">
+                <div class="row mb-1">
+                    <div class="col-4 text-secondary">版本</div>
+                    <div class="col-8">v0.1.0</div>
+                </div>
+                <div class="row mb-1">
+                    <div class="col-4 text-secondary">Python</div>
+                    <div class="col-8">3.11+</div>
+                </div>
+                <div class="row mb-1">
+                    <div class="col-4 text-secondary">项目地址</div>
+                    <div class="col-8">
+                        <a href="https://github.com/banana-Hu/ai-news-aggregator-about_wechat_github_aihot-" class="text-info" target="_blank">
+                            banana-Hu/ai-news-aggregator
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function saveLark() {
+    const cid = document.getElementById('chat-id-input').value.trim();
+    if(!cid) { showToast('请输入群 ID', 'err'); return; }
+    fetch('/api/settings/lark', {method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body: 'chat_id=' + encodeURIComponent(cid)
+    }).then(r=>r.json()).then(d=>{
+        if(d.ok) { showToast('已保存 ✅', 'ok'); }
+        else { showToast(d.msg, 'err'); }
+    });
+}
+</script>
+{% endblock %}

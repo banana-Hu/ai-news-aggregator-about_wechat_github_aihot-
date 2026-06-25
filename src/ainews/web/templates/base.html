@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI News Aggregator</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        body { background: #0f0f1a; color: #e0e0e0; font-size: 14px; }
+        .sidebar { min-height: 100vh; background: #1a1a2e; width: 200px; }
+        .sidebar .nav-link { color: #a0a0b0; padding: 10px 18px; border-radius: 8px; margin: 2px 8px; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { background: #2a2a4a; color: #fff; }
+        .sidebar .nav-link i { margin-right: 8px; width: 20px; text-align: center; }
+        .card { background: #1e1e32; border: 1px solid #2a2a4a; border-radius: 12px; }
+        .card-header { background: transparent; border-bottom: 1px solid #2a2a4a; font-weight: 600; }
+        .stat-card { padding: 20px; border-radius: 12px; background: #1e1e32; border: 1px solid #2a2a4a; }
+        .stat-card .number { font-size: 28px; font-weight: 700; }
+        .btn-primary { background: #4a6cf7; border: none; }
+        .btn-primary:hover { background: #3b5de7; }
+        .log-entry { padding: 4px 0; border-bottom: 1px solid #222; font-size: 13px; }
+        .log-time { color: #666; width: 60px; display: inline-block; }
+        .log-ok { color: #4ade80; }
+        .log-err { color: #f87171; }
+        .log-warn { color: #fbbf24; }
+        .log-info { color: #60a5fa; }
+        pre { background: #111; padding: 15px; border-radius: 8px; color: #ccc; max-height: 400px; overflow: auto; }
+        .badge-source { font-size: 11px; padding: 3px 8px; border-radius: 20px; }
+        .badge-aihot { background: #3b82f6; color: #fff; }
+        .badge-wechat_mp { background: #22c55e; color: #fff; }
+        .badge-github { background: #a855f7; color: #fff; }
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
+    </style>
+</head>
+<body>
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <div class="sidebar d-flex flex-column flex-shrink-0 p-2">
+            <div class="text-center py-3">
+                <div style="font-size: 32px;">🤖</div>
+                <div class="fw-bold mt-1" style="font-size: 13px;">AI 情报</div>
+                <div style="font-size: 11px; color: #666;">控制台</div>
+            </div>
+            <hr class="text-secondary my-1">
+            <ul class="nav nav-pills flex-column mb-auto">
+                <li class="nav-item">
+                    <a href="/" class="nav-link {{ 'active' if current_page == '/' else '' }}">
+                        <i class="bi bi-speedometer2"></i>概览
+                    </a>
+                </li>
+                <li>
+                    <a href="/fetch" class="nav-link {{ 'active' if current_page == '/fetch' else '' }}">
+                        <i class="bi bi-cloud-download"></i>数据抓取
+                    </a>
+                </li>
+                <li>
+                    <a href="/push" class="nav-link {{ 'active' if current_page == '/push' else '' }}">
+                        <i class="bi bi-send"></i>推送
+                    </a>
+                </li>
+                <li>
+                    <a href="/settings" class="nav-link {{ 'active' if current_page == '/settings' else '' }}">
+                        <i class="bi bi-gear"></i>设置
+                    </a>
+                </li>
+            </ul>
+            <hr class="text-secondary my-1">
+            <div class="text-center py-2" style="font-size: 11px; color: #555;">
+                v0.1.0 · <span id="status-dot" class="text-success">●</span> 运行中
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="flex-grow-1 p-4" style="max-height: 100vh; overflow-y: auto;">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function showToast(msg, type) {
+            const c = document.getElementById('toast-container');
+            const colors = {ok: '#4ade80', err: '#f87171', warn: '#fbbf24', info: '#60a5fa'};
+            const bg = colors[type] || '#60a5fa';
+            const t = document.createElement('div');
+            t.className = 'toast align-items-center text-bg-dark border-0 show';
+            t.innerHTML = `<div class="d-flex"><div class="toast-body" style="color:${bg}">${msg}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
+            c.appendChild(t);
+            setTimeout(() => t.remove(), 5000);
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
