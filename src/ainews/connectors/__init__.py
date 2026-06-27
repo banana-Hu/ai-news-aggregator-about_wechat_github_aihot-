@@ -3,18 +3,21 @@
 from .github_connector import GitHubConnector
 from .aihot_connector import AIHOTConnector
 from .wechat_mp_connector import WeChatMpConnector
+from .telegram_connector import TelegramConnector
 
-__all__ = ["GitHubConnector", "AIHOTConnector", "WeChatMpConnector", "CONNECTORS", "get_connector"]
+__all__ = ["GitHubConnector", "AIHOTConnector", "WeChatMpConnector",
+           "TelegramConnector", "CONNECTORS", "get_connector"]
 
 # 数据源注册表：新增数据源只需在此注册
 CONNECTORS = {
     "aihot": (AIHOTConnector, {"max_items": 50}),
     "github": (GitHubConnector, {}),
     "wechat_mp": (WeChatMpConnector, {"extract_content": False, "max_articles": 20}),
+    "telegram": (TelegramConnector, {"max_per_group": 20}),
 }
 
 # "all" 包含的数据源（不含 GitHub，因无 Token 时速率过低）
-ALL_SOURCES = ["aihot", "wechat_mp"]
+ALL_SOURCES = ["aihot", "wechat_mp", "telegram"]
 
 
 def get_connector(name: str, config: dict | None = None):

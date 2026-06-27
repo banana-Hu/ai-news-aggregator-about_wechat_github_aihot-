@@ -92,6 +92,34 @@ wechat_mp:
   max_retries: 3
   request_timeout: 15
 
+# ---- Telegram 配置 ----
+telegram:
+  # MTProto 客户端凭证（通过 my.telegram.org 获取）
+  # api_id: 12345678
+  # api_hash: "xxxxx"
+  # phone: "+8613800138000"
+
+  # 监听的群组/频道名称列表（留空自动识别 AI 相关群）
+  groups: []
+  #   - "AI 交流群"
+  #   - "LLM News"
+
+  # 每个群组最大读取消息数
+  max_per_group: 20
+
+  # 消息关键词筛选
+  keywords:
+    - "AI"
+    - "Agent"
+    - "LLM"
+    - "GPT"
+    - "Claude"
+    - "OpenAI"
+    - "大模型"
+    - "RAG"
+    - "MCP"
+    - "开源"
+
 # ---- 全局配置 ----
 global:
   # 输出目录

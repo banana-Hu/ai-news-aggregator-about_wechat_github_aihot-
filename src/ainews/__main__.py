@@ -31,7 +31,7 @@ def cli_main():
 
     # fetch
     fetch_p = sub.add_parser("fetch", help="抓取数据源")
-    fetch_p.add_argument("--source", "-s", choices=["all", "aihot", "github", "wechat_mp"],
+    fetch_p.add_argument("--source", "-s", choices=["all", "aihot", "github", "wechat_mp", "telegram"],
                          default="all")
     fetch_p.add_argument("--limit", "-l", type=int, default=0)
     fetch_p.add_argument("--output", "-o", default="")
@@ -39,7 +39,7 @@ def cli_main():
 
     # push
     push_p = sub.add_parser("push", help="抓取并推送飞书")
-    push_p.add_argument("--source", "-s", choices=["all", "aihot", "github", "wechat_mp"],
+    push_p.add_argument("--source", "-s", choices=["all", "aihot", "github", "wechat_mp", "telegram"],
                         default="all")
     push_p.add_argument("--chat-id", type=str, default="")
     push_p.add_argument("--dry-run", action="store_true")
