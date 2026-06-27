@@ -47,7 +47,15 @@ def cli_main():
     # web
     web_p = sub.add_parser("web", help="启动 Web 控制面板")
     web_p.add_argument("--host", type=str, default="0.0.0.0")
-    web_p.add_argument("--port", "-p", type=int, default=8099)
+    web_p.add_argument("--port", "-p", type=int, default=8101)
+
+    # daily — 立即执行一次日报
+    daily_p = sub.add_parser("daily", help="立即执行一次日报抓取+推送")
+    daily_p.add_argument("--github", action="store_true", help="包含 GitHub")
+
+    # serve — Web 服务 + 后台调度
+    serve_p = sub.add_parser("serve", help="启动 Web 服务 + 每日自动调度")
+    serve_p.add_argument("--port", "-p", type=int, default=8101)
 
     args = parser.parse_args()
 
@@ -57,8 +65,26 @@ def cli_main():
         _cmd_push(args)
     elif args.command == "web":
         _cmd_web(args)
+    elif args.command == "daily":
+        _cmd_daily(args)
+    elif args.command == "serve":
+        _cmd_serve(args)
     else:
         parser.print_help()
+
+
+def _cmd_daily(args):
+    from ainews.scheduler import run_daily
+    run_daily(fetch_github=args.github)
+
+
+def _cmd_serve(args):
+    import threading
+    from ainews.scheduler import loop_forever
+    t = threading.Thread(target=loop_forever, daemon=True)
+    t.start()
+    from ainews.web.app import run_server
+    run_server(port=args.port)
 
 
 def _cmd_web(args):
