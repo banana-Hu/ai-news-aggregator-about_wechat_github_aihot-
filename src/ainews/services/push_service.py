@@ -33,16 +33,20 @@ def _sanitize_for_cmd(text: str) -> str:
 
 def _run_lark(args: list[str], timeout: int = 30) -> subprocess.CompletedProcess:
     """执行 lark-cli 命令，兼容 Windows .cmd 和编码。"""
+    # 清除 Agent 环境变量，避免 lark-cli 绑定冲突
+    env = os.environ.copy()
+    for var in ("HERMES_HOME", "OPENCLAW_HOME", "REASONIX_HOME", "CODEBUDDY_HOME"):
+        env.pop(var, None)
+
     if sys.platform == "win32":
-        # 转义含特殊字符的参数（cmd.exe 的 | > < 即使引号内也会解析）
         args = [_sanitize_for_cmd(a) if "|" in a or ">" in a or "<" in a else a for a in args]
         cmd_str = subprocess.list2cmdline(args)
         result = subprocess.run(
-            cmd_str, shell=True, capture_output=True, timeout=timeout,
+            cmd_str, shell=True, capture_output=True, timeout=timeout, env=env,
         )
     else:
         result = subprocess.run(
-            args, capture_output=True, timeout=timeout, text=True,
+            args, capture_output=True, timeout=timeout, text=True, env=env,
         )
     return result
 
