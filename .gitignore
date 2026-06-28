@@ -24,3 +24,6 @@ logs/
 
 # Test
 .pytest_cache/
+
+# TrendRadar (deployed copy)
+TrendRadar/
